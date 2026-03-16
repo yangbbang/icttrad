@@ -1,0 +1,179 @@
+/* ── 리셋 & 기본 ─────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #080c12;
+  --nav:     #0c1220;
+  --panel:   #0f1828;
+  --card:    #111d2e;
+  --border:  rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.10);
+  --text:    #e8edf5;
+  --muted:   rgba(232,237,245,0.45);
+  --dim:     rgba(232,237,245,0.22);
+  --G:  #10d97e;
+  --R:  #f04b5a;
+  --Y:  #f5b731;
+  --B:  #4d8eff;
+  --B2: #2b6be8;
+  --gBg: rgba(16,217,126,0.10);
+  --rBg: rgba(240,75,90,0.10);
+  --yBg: rgba(245,183,49,0.10);
+  --bBg: rgba(77,142,255,0.10);
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-ui:   'Syne', sans-serif;
+}
+
+[data-theme="light"] {
+  --bg:    #f0f4fa;
+  --nav:   #ffffff;
+  --panel: #ffffff;
+  --card:  #f8fafd;
+  --border:  rgba(0,0,0,0.07);
+  --border2: rgba(0,0,0,0.12);
+  --text:  #0d1420;
+  --muted: rgba(13,20,32,0.48);
+  --dim:   rgba(13,20,32,0.28);
+}
+
+html { font-size: 14px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  min-height: 100vh;
+  transition: background 0.2s, color 0.2s;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 스크롤바 ─────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+/* ── 공통 컴포넌트 ───────────────────────────── */
+.pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+.pill-g { background: var(--gBg); color: var(--G); }
+.pill-r { background: var(--rBg); color: var(--R); }
+.pill-y { background: var(--yBg); color: var(--Y); }
+.pill-b { background: var(--bBg); color: var(--B); }
+.pill-n { background: rgba(128,128,128,0.10); color: var(--muted); }
+
+.card {
+  background: var(--card);
+  border: 0.5px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.lbl {
+  font-size: 9px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-family: var(--font-ui);
+}
+
+.mc {
+  background: rgba(128,128,128,0.06);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 8px;
+  text-align: center;
+}
+.mc-t { font-size: 9px; color: var(--dim); margin-bottom: 4px; font-family: var(--font-ui); }
+.mc-v { font-size: 13px; font-weight: 600; font-family: var(--font-mono); }
+
+.zrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 12px;
+}
+.zrow:last-child { border-bottom: none; }
+.zrow-label { color: var(--muted); font-size: 11px; }
+
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.g4 { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; }
+.g5 { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 6px; }
+
+/* ── 체크박스 ────────────────────────────────── */
+.chk-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.15s;
+}
+.chk-row:last-child { border-bottom: none; }
+.chk-row:hover { opacity: 0.8; }
+.chk-box {
+  width: 17px; height: 17px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.chk-box.on { background: var(--gBg); border-color: var(--G); }
+
+/* ── 노트박스 ────────────────────────────────── */
+.notebox {
+  background: rgba(245,183,49,0.06);
+  border-left: 2px solid var(--Y);
+  border-radius: 0 8px 8px 0;
+  padding: 9px 12px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+
+/* ── 프로그레스 바 ───────────────────────────── */
+.prog-bar { height: 4px; background: rgba(128,128,128,0.1); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.prog-fill { height: 100%; background: var(--B); border-radius: 2px; transition: width 0.3s; }
+
+/* ── 토스트 ──────────────────────────────────── */
+.toast {
+  position: fixed;
+  top: 68px; right: 14px;
+  z-index: 400;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  animation: slideIn 0.25s ease;
+  max-width: 280px;
+  font-family: var(--font-mono);
+}
+@keyframes slideIn { from { transform: translateY(-8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ── 반응형 ──────────────────────────────────── */
+@media (max-width: 580px) {
+  .g4 { grid-template-columns: 1fr 1fr; }
+  .g5 { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── 점프 애니메이션 ────────────────────────── */
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+@keyframes priceFlash { 0%,100%{opacity:1} 40%{opacity:0.5} }
+.price-flash { animation: priceFlash 0.25s ease; }
