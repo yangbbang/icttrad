@@ -3,12 +3,15 @@ import Navbar from './components/Navbar'
 import SignalPanel from './components/SignalPanel'
 import Backtest from './components/Backtest'
 import Guide from './components/Guide'
+import AutoTrade from './components/AutoTrade'
 import TelegramModal from './components/TelegramModal'
 import { useBybit } from './hooks/useBybit'
 import { useTelegram } from './hooks/useTelegram'
+import { useAutoTrade } from './hooks/useAutoTrade'
 
 const TABS = [
   { id:'signal',   label:'분석 패널' },
+  { id:'auto',     label:'자동매매'  },
   { id:'backtest', label:'백테스팅'  },
   { id:'guide',    label:'ICT 가이드' },
 ]
@@ -23,16 +26,24 @@ export default function App() {
   const { data, status, wsBadge } = useBybit(sym)
   const tg = useTelegram()
 
-  function toggleTheme() {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    document.documentElement.setAttribute('data-theme', next)
-  }
-
   function addToast(msg, type = 'g') {
     const id = Date.now()
     setToasts(prev => [...prev, { id, msg, type }])
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500)
+  }
+
+  // 자동매매 알림: 토스트 + (설정 시) 텔레그램
+  const notifyTrade = useCallback((msg, type = 'g') => {
+    addToast(msg.split('\n')[0], type)
+    if (tg.enabled) tg.send(`🤖 ${msg}`)
+  }, [tg])
+
+  const at = useAutoTrade({ notify: notifyTrade })
+
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    document.documentElement.setAttribute('data-theme', next)
   }
 
   const handleAlert = useCallback((s, d, score) => {
@@ -80,6 +91,7 @@ export default function App() {
       {/* 콘텐츠 */}
       <div style={{ padding:'12px 16px', maxWidth:960, margin:'0 auto' }}>
         {tab === 'signal'   && <SignalPanel sym={sym} data={data} onAlert={handleAlert} />}
+        {tab === 'auto'     && <AutoTrade at={at} sym={sym} />}
         {tab === 'backtest' && <Backtest sym={sym} />}
         {tab === 'guide'    && <Guide />}
       </div>
