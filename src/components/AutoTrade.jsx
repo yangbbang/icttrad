@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { fp } from '../utils/format'
 import { SHORT } from '../utils/constants'
 
+const shortName = s => SHORT[s] || s.replace('USDT', '')
+
 const COND_LABELS = [
   { k: 'trendBreak', tag: '추세선' },
   { k: 'mss',        tag: 'MSS' },
@@ -55,6 +57,7 @@ export default function AutoTrade({ at, sym }) {
       cooldownMin: Math.max(5, Math.round(+form.cooldownMin || 30)),
       maxDaily: Math.min(20, Math.max(1, Math.round(+form.maxDaily || 5))),
       paperEquity: Math.max(100, +form.paperEquity || 10000),
+      scanTop: Math.min(50, Math.max(10, Math.round(+form.scanTop || 30))),
     }
     setForm(next)
     saveCfg(next)
@@ -125,7 +128,7 @@ export default function AutoTrade({ at, sym }) {
         <div className="card" style={{ border: `0.5px solid ${position.side === 'Buy' ? 'var(--G)' : 'var(--R)'}` }}>
           <div className="lbl">보유 포지션 {position.env !== 'paper' && <span style={{ color: 'var(--Y)' }}>({position.env === 'live' ? '실거래' : '데모'})</span>}</div>
           <div className="g5">
-            <Mc label="심볼" value={`${SHORT[position.sym] || position.sym} ${position.side === 'Buy' ? 'LONG' : 'SHORT'}`} color={position.side === 'Buy' ? 'var(--G)' : 'var(--R)'} />
+            <Mc label="심볼" value={`${shortName(position.sym)} ${position.side === 'Buy' ? 'LONG' : 'SHORT'}`} color={position.side === 'Buy' ? 'var(--G)' : 'var(--R)'} />
             <Mc label="진입가" value={fp(position.entry, position.sym)} />
             <Mc label="SL" value={fp(position.sl, position.sym)} color="var(--R)" />
             <Mc label="TP" value={fp(position.tp, position.sym)} color="var(--G)" />
@@ -167,13 +170,21 @@ export default function AutoTrade({ at, sym }) {
 
       {/* 🔍 시그널 보드 */}
       <div className="card">
-        <div className="lbl">🔍 전 심볼 시그널 보드 — 추세선 이탈 → MSS → OTE (필수) + 스윕/쐐기/H&S</div>
+        <div className="lbl">
+          🔍 시그널 보드 — 추세선 이탈 → MSS → OTE (필수) + 스윕/쐐기/H&S
+          <span style={{ color: 'var(--B)', marginLeft: 6 }}>
+            {cfg.scanMode === 'all' ? `전체 시장 거래대금 상위 ${board.length}종목 감시` : `기본 ${board.length}종목 감시`}
+          </span>
+        </div>
         {board.length === 0 ? (
           <div style={{ fontSize: 11, color: 'var(--dim)' }}>스캔 중...</div>
         ) : (
-          board.map(({ sym: s, analysis: a }) => (
+          [...board]
+            .sort((a, b) => ((b.analysis?.signal ? 100 : 0) + (b.analysis?.score || 0)) - ((a.analysis?.signal ? 100 : 0) + (a.analysis?.score || 0)))
+            .slice(0, 15)
+            .map(({ sym: s, analysis: a }) => (
             <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '0.5px solid var(--border)', opacity: a ? 1 : 0.4 }}>
-              <span style={{ width: 46, fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)', color: s === sym ? 'var(--B)' : 'var(--text)' }}>{SHORT[s]}</span>
+              <span style={{ width: 56, fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)', color: s === sym ? 'var(--B)' : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shortName(s)}</span>
               <span style={{ width: 46, fontSize: 10, fontWeight: 700, color: a?.trend.dir === 'LONG' ? 'var(--G)' : a?.trend.dir === 'SHORT' ? 'var(--R)' : 'var(--dim)' }}>
                 {a?.trend.dir || '대기'}
               </span>
@@ -257,7 +268,7 @@ export default function AutoTrade({ at, sym }) {
         {hist.slice(0, 8).map((h, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '0.5px solid var(--border)', fontSize: 11 }}>
             <span style={{ color: 'var(--muted)' }}>{new Date(h.t).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-            <span>{SHORT[h.sym]} {h.side === 'Buy' ? 'L' : 'S'} · {h.reason}</span>
+            <span>{shortName(h.sym)} {h.side === 'Buy' ? 'L' : 'S'} · {h.reason}</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: h.pnl >= 0 ? 'var(--G)' : 'var(--R)' }}>
               {h.pnl >= 0 ? '+' : ''}{h.pnl.toFixed(2)}
             </span>
@@ -298,6 +309,17 @@ export default function AutoTrade({ at, sym }) {
           <Field label="레버리지"><input style={inputStyle} type="number" value={form.leverage} onChange={e => set('leverage', e.target.value)} /></Field>
           <Field label="최소 점수 (3~6)"><input style={inputStyle} type="number" value={form.minScore} onChange={e => set('minScore', e.target.value)} /></Field>
           <Field label="쿨다운 (분)"><input style={inputStyle} type="number" value={form.cooldownMin} onChange={e => set('cooldownMin', e.target.value)} /></Field>
+        </div>
+        <div className="g2" style={{ marginBottom: 10 }}>
+          <Field label="감시 범위">
+            <select style={inputStyle} value={form.scanMode} onChange={e => set('scanMode', e.target.value)}>
+              <option value="preset">기본 9종목 (BTC, ETH...)</option>
+              <option value="all">바이빗 선물 전체 — 거래대금 상위 N</option>
+            </select>
+          </Field>
+          <Field label="상위 종목 수 (전체 모드, 10~50)">
+            <input style={inputStyle} type="number" value={form.scanTop} onChange={e => set('scanTop', e.target.value)} disabled={form.scanMode !== 'all'} />
+          </Field>
         </div>
         <div className="g4" style={{ marginBottom: 12 }}>
           <Field label="일일 최대 진입"><input style={inputStyle} type="number" value={form.maxDaily} onChange={e => set('maxDaily', e.target.value)} /></Field>

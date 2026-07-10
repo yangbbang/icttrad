@@ -22,6 +22,8 @@ export const DEFAULT_CFG = {
   paperEquity: 10000,
   htfInterval: 'D',   // 장기추세선 타임프레임 (D | W)
   ltfInterval: '15',  // 진입 타임프레임 (분)
+  scanMode: 'preset', // preset(기본 9종목) | all(전체 시장 거래대금 상위 N)
+  scanTop: 30,        // all 모드에서 분석할 종목 수 (최대 50)
 }
 
 const TAKER_FEE = 0.00055  // 페이퍼 수수료 가정 (편도 0.055%)
@@ -219,7 +221,7 @@ export function useAutoTrade({ notify }) {
     withSignal.sort((a, b) => b.analysis.signal.score - a.analysis.signal.score)
     const top = withSignal[0]
     const sig = top.analysis.signal
-    votes.push({ who: MEMBERS.scan, ok: true, note: `${SYMBOLS.length}개 스캔 → 셋업 ${withSignal.length}건, 최우선 ${top.sym} ${sig.side} (${sig.score}/6)` })
+    votes.push({ who: MEMBERS.scan, ok: true, note: `${candidates.length}개 종목 스캔 → 셋업 ${withSignal.length}건, 최우선 ${top.sym} ${sig.side} (${sig.score}/6)` })
 
     // 📊 분석 보고
     votes.push({ who: MEMBERS.anal, ok: true, note: `${sig.reasons.join(' + ')} | 진입 ${sig.entry.toFixed(4)} / SL ${sig.sl.toFixed(4)} / TP ${sig.tp.toFixed(4)}` })
@@ -280,14 +282,33 @@ export function useAutoTrade({ notify }) {
     }
   }, [addLog, enter])
 
-  // ── 🔍 스캐너: 전체 심볼 주기 스캔 ─────────────────
+  // ── 🔍 스캐너: 감시 심볼 목록 결정 후 주기 스캔 ──────
+  // preset: 기본 9종목 / all: 바이빗 선물 전체 중 24H 거래대금 상위 N개
   const scan = useCallback(async () => {
     const c = cfgRef.current
-    const results = await Promise.all(SYMBOLS.map(async sym => {
+    let syms = SYMBOLS
+    if (c.scanMode === 'all') {
       try {
-        return { sym, analysis: await fetchAnalysis(sym, c.htfInterval, c.ltfInterval) }
-      } catch { return { sym, analysis: null } }
-    }))
+        const r = await fetch(`${BYBIT_REST}/v5/market/tickers?category=linear`)
+        const j = await r.json()
+        const top = (j.result?.list || [])
+          .filter(t => t.symbol.endsWith('USDT') && !t.symbol.includes('-'))
+          .sort((a, b) => parseFloat(b.turnover24h) - parseFloat(a.turnover24h))
+          .slice(0, Math.min(50, Math.max(10, +c.scanTop || 30)))
+          .map(t => t.symbol)
+        if (top.length) syms = top
+      } catch { /* 실패 시 기본 목록 유지 */ }
+    }
+    // 10개씩 청크로 나눠 요청 (버스트 방지)
+    const results = []
+    for (let i = 0; i < syms.length; i += 10) {
+      const chunk = await Promise.all(syms.slice(i, i + 10).map(async sym => {
+        try {
+          return { sym, analysis: await fetchAnalysis(sym, c.htfInterval, c.ltfInterval) }
+        } catch { return { sym, analysis: null } }
+      }))
+      results.push(...chunk)
+    }
     setBoard(results)
     setScanAt(Date.now())
     return results
@@ -305,7 +326,7 @@ export function useAutoTrade({ notify }) {
     cycle()
     const id = setInterval(cycle, SCAN_MS)
     return () => { alive = false; clearInterval(id) }
-  }, [scan, holdMeeting, addLog, cfg.htfInterval, cfg.ltfInterval])
+  }, [scan, holdMeeting, addLog, cfg.htfInterval, cfg.ltfInterval, cfg.scanMode, cfg.scanTop])
 
   // ── 페이퍼 포지션 감시 (심볼 무관, 10초 폴링) ───────
   useEffect(() => {
