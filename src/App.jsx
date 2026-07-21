@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import Navbar from './components/Navbar'
 import SignalPanel from './components/SignalPanel'
+import AltStrength from './components/AltStrength'
 import Backtest from './components/Backtest'
 import Guide from './components/Guide'
 import TelegramModal from './components/TelegramModal'
@@ -9,6 +10,7 @@ import { useTelegram } from './hooks/useTelegram'
 
 const TABS = [
   { id:'signal',   label:'분석 패널' },
+  { id:'alt',      label:'알트 강도' },
   { id:'backtest', label:'백테스팅'  },
   { id:'guide',    label:'ICT 가이드' },
 ]
@@ -80,6 +82,7 @@ export default function App() {
       {/* 콘텐츠 */}
       <div style={{ padding:'12px 16px', maxWidth:960, margin:'0 auto' }}>
         {tab === 'signal'   && <SignalPanel sym={sym} data={data} onAlert={handleAlert} />}
+        {tab === 'alt'      && <AltStrength />}
         {tab === 'backtest' && <Backtest sym={sym} />}
         {tab === 'guide'    && <Guide />}
       </div>
