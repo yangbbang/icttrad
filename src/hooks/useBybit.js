@@ -114,7 +114,14 @@ export function useBybit(sym) {
           const d = msg.data
           setData(prev => {
             if (!prev) return prev
-            return { ...prev, price: parseFloat(d.lastPrice), chg24: parseFloat(d.price24hPcnt) * 100, high24: parseFloat(d.highPrice24h), low24: parseFloat(d.lowPrice24h), vol24: parseFloat(d.turnover24h) }
+            // 바이빗 WS는 스냅샷 이후 변경 필드만 보내는 delta — 있는 필드만 갱신
+            const next = { ...prev }
+            if (d.lastPrice     !== undefined) next.price  = parseFloat(d.lastPrice)
+            if (d.price24hPcnt  !== undefined) next.chg24  = parseFloat(d.price24hPcnt) * 100
+            if (d.highPrice24h  !== undefined) next.high24 = parseFloat(d.highPrice24h)
+            if (d.lowPrice24h   !== undefined) next.low24  = parseFloat(d.lowPrice24h)
+            if (d.turnover24h   !== undefined) next.vol24  = parseFloat(d.turnover24h)
+            return next
           })
         }
       }

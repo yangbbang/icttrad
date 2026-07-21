@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import Navbar from './components/Navbar'
 import SignalPanel from './components/SignalPanel'
 import AltStrength from './components/AltStrength'
@@ -24,6 +24,7 @@ export default function App() {
 
   const { data, status, wsBadge } = useBybit(sym)
   const tg = useTelegram()
+  const alertAt = useRef({})  // 심볼별 마지막 토스트 시각 (도배 방지)
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark'
@@ -38,7 +39,10 @@ export default function App() {
   }
 
   const handleAlert = useCallback((s, d, score) => {
-    tg.sendAlert(s, d, score)
+    tg.sendAlert(s, d, score)  // 텔레그램은 자체 5분 쿨다운
+    const now = Date.now()
+    if (alertAt.current[s] && now - alertAt.current[s] < 600000) return  // 10분 쿨다운
+    alertAt.current[s] = now
     if (score >= 5) addToast(`${s} ICT 셋업 ${score}/7 감지!`, 'g')
   }, [tg])
 
